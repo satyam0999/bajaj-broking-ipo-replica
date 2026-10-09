@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>IPO - Apply for Latest IPOs Online | Bajaj Broking</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ===== SquadStack Voice Agent — Step 1: widget snippet ===== -->
+    <!-- Config MUST come before the bundle loader (load order matters). -->
+    <script>
+      window.SquadStack = window.SquadStack || {};
+      window.SquadStack.config = {
+        apiKey: "8e4584836ed94c0a41f2011f8e982bbc923f5659cf477c9d",
+        agent: {
+          agentName: "Ananya",
+          displayName: "Bajaj IPO Assistant",
+          botType: "omnichannel",
+          script: "tagging",
+          agentConfigReferenceId: "CKPUS4",
+          promptReferenceId: "SX4874"
+        },
+        customer: {
+          name: "Anonymous",
+          email: "anonymous@example.com",
+          phone: "8588069477"
+        },
+        theme: {
+          primary: "#1a3a6b"
+        }
+        /*
+        Do NOT add activePaths during the first test.
+        After the widget works on your real URL:
+        visibility: { activePaths: ["^/ipo", "^/blog/ipo"] }
+        */
+      };
+    </script>
+    <script
+      src="https://d1iba7cd9se7zf.cloudfront.net/widget/v1/main.js"
+      defer async></script>
+    <!-- ===== end SquadStack snippet ===== -->
+  </body>
+</html>
