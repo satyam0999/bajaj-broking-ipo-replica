@@ -16,9 +16,30 @@ import {
 
 const DEBUG = true // logs each event to the console (guide's recommended verification aid)
 
+// The widget only accepts page events during an active call. Firing before a
+// call is started makes this build throw "bot is not initialized" and POST a
+// 404 (despite the guide promising a silent no-op). So we gate on an active
+// conversation and swallow any widget-side throw — keeping it a true no-op
+// until a call is live, with no console noise.
+function callIsActive() {
+  try {
+    return !!window.SquadStack?.getConversationId?.()
+  } catch {
+    return false
+  }
+}
+
 function sendPageEvent(name, payload) {
-  if (DEBUG) console.log('[SquadStack event]', name, payload)
-  window.SquadStack?.sendPageEvent?.(name, payload)
+  const active = callIsActive()
+  if (DEBUG) {
+    console.log('[SquadStack event]', name, active ? '(sent)' : '(queued — no active call)', payload)
+  }
+  if (!active) return // nothing to deliver to until a call starts
+  try {
+    window.SquadStack?.sendPageEvent?.(name, payload)
+  } catch {
+    /* widget not ready — ignore */
+  }
 }
 
 // "SME" | "Mainboard" (short form the bot prompt expects)
