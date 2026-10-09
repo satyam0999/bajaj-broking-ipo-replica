@@ -16,29 +16,17 @@ import {
 
 const DEBUG = true // logs each event to the console (guide's recommended verification aid)
 
-// The widget only accepts page events during an active call. Firing before a
-// call is started makes this build throw "bot is not initialized" and POST a
-// 404 (despite the guide promising a silent no-op). So we gate on an active
-// conversation and swallow any widget-side throw — keeping it a true no-op
-// until a call is live, with no console noise.
-function callIsActive() {
-  try {
-    return !!window.SquadStack?.getConversationId?.()
-  } catch {
-    return false
-  }
-}
-
+// Exactly how Bajaj's site does it: always call sendPageEvent, unconditionally.
+// The widget itself decides the transport — during a live call it rides the
+// WebRTC/RTVI data channel. We don't gate on call state (an earlier gate using
+// getConversationId() could wrongly suppress a real mid-call send). try/catch
+// just stops a pre-call "bot not initialized" throw from bubbling into React.
 function sendPageEvent(name, payload) {
-  const active = callIsActive()
-  if (DEBUG) {
-    console.log('[SquadStack event]', name, active ? '(sent)' : '(queued — no active call)', payload)
-  }
-  if (!active) return // nothing to deliver to until a call starts
   try {
     window.SquadStack?.sendPageEvent?.(name, payload)
-  } catch {
-    /* widget not ready — ignore */
+    if (DEBUG) console.log('[SquadStack event] sent →', name, payload)
+  } catch (e) {
+    if (DEBUG) console.log('[SquadStack event] not delivered (start a call first) →', name, '·', e?.message)
   }
 }
 
