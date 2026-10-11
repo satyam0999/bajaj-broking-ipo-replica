@@ -13,6 +13,7 @@ export default function FilterChips({ value, onChange, counts }) {
         return (
           <button
             key={c.key}
+            data-filter={c.key}
             onClick={() => onChange(c.key)}
             className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
               active

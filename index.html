@@ -34,6 +34,14 @@
         },
         theme: {
           primary: "#1a3a6b"
+        },
+        // Fired the moment the WebRTC call connects & the bot is ready.
+        // We bridge to the React app, which then sends "ipo-page-loaded"
+        // with the currently-open IPO screen so the bot has live context.
+        callbacks: {
+          onCallStarted: function (conversationId) {
+            if (window.__ssOnCallStarted) window.__ssOnCallStarted(conversationId);
+          }
         }
         /*
         Do NOT add activePaths during the first test.

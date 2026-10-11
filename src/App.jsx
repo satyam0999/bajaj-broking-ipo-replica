@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import Footer from './components/Footer'
 import IPOPage from './pages/IPOPage'
 import IPODetailPage from './pages/IPODetailPage'
 import { IPOProvider } from './IPOContext'
+import { initSquadStackBridge } from './squadstack'
 
 const PAGES = {
   current: {
@@ -53,6 +55,10 @@ const PAGES = {
 }
 
 export default function App() {
+  useEffect(() => {
+    initSquadStackBridge() // onCallStarted + bot->page (switch-tab / apply-filter) listeners
+  }, [])
+
   return (
     <IPOProvider>
       <Routes>

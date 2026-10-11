@@ -1,10 +1,15 @@
-// SquadStack Voice Agent — page -> bot events.
-// Per the integration guide we only implement two events here:
-//   Event 1: "ipo-page-loaded"  (first IPO list page load)
-//   Event 3: "ipo-tab-switched" (user switches Current/Upcoming/Closed/Performance tab)
+// SquadStack Voice Agent — page <-> bot wiring.
 //
-// Both are fire-and-forget. window.SquadStack?.sendPageEvent is optional-chained,
-// so these are zero-crash no-ops when the widget bundle isn't loaded.
+// PAGE -> BOT (we send):
+//   "ipo-page-loaded"  — current screen, sent on page load AND again the moment
+//                        the WebRTC call connects (onCallStarted), so the bot
+//                        always has the on-screen IPOs when the conversation starts.
+//   "ipo-tab-switched" — sent when the user (or the bot) switches tab.
+//
+// BOT -> PAGE (we listen, via the SDK's "squadstack:agent-event" DOM event):
+//   "switch-tab"       — bot navigates the page to a tab (renders that component).
+//   "apply-filter"     — bot applies the All/MainBoard/SME filter.
+//   "request-ipo-data" — bot asks for the current screen; we reply with it.
 
 import {
   getName,
@@ -86,18 +91,74 @@ export function mapIpo(item, bucket) {
 let firstLoadDone = false
 let lastView = null // dedupes StrictMode double-mounts / re-renders of the same tab
 
+// Snapshot of whatever IPO screen is currently open. Kept up to date on every
+// page/tab render so we can hand it to the bot the instant a call connects.
+let currentView = null
+
 export function notifyIPOView({ pageType, bucket, filter, items }) {
+  const ipos = (items || []).map((it) => mapIpo(it, bucket))
+  currentView = { pageType, filter, ipos }
+
   if (lastView === pageType) return // same tab already reported this view
   lastView = pageType
 
-  const ipos = (items || []).map((it) => mapIpo(it, bucket))
-
   if (!firstLoadDone) {
     firstLoadDone = true
-    // Event 1 — Page load
+    // Event 1 — Page load (delivered to the bot only if a call is already live;
+    // otherwise harmlessly dropped — onCallStarted re-sends it on connect).
     sendPageEvent('ipo-page-loaded', { pageType, filter, ipos })
   } else {
     // Event 3 — Tab switch
     sendPageEvent('ipo-tab-switched', { tab: pageType, ipos })
   }
+}
+
+// --- Call connect: hand the bot the current screen -----------------------
+// Fired by the widget (callbacks.onCallStarted) the moment the WebRTC call is
+// live and the bot is ready — i.e. the first instant sendPageEvent is actually
+// delivered. We resend the current screen as "ipo-page-loaded" so the bot opens
+// the conversation already knowing which IPOs are on screen.
+function handleCallStarted(conversationId) {
+  if (DEBUG) console.log('[SquadStack] call connected →', conversationId, '· sending current screen')
+  const v = currentView
+  if (v) sendPageEvent('ipo-page-loaded', { pageType: v.pageType, filter: v.filter, ipos: v.ipos })
+}
+
+// --- Bot -> page control -------------------------------------------------
+// The SDK dispatches a DOM CustomEvent ("squadstack:agent-event", and the
+// legacy "conversationalagent:agent-event") whenever the bot wants the page to
+// do something. We drive the real UI by clicking the matching tab/filter
+// element (tagged with data-tab / data-filter), exactly as the guide suggests.
+function handleAgentEvent(e) {
+  const d = e?.detail || {}
+  const eventName = d.eventName || d.name || d.type
+  const payload = d.payload || d.data || {}
+  if (DEBUG) console.log('[SquadStack] agent-event ←', eventName, payload)
+
+  if (eventName === 'switch-tab' && payload.tab) {
+    const el = document.querySelector(`[data-tab="${payload.tab}"]`)
+    if (el) el.click()
+    return
+  }
+  if (eventName === 'apply-filter' && payload.filter) {
+    const el = document.querySelector(`[data-filter="${payload.filter}"]`)
+    if (el) el.click()
+    return
+  }
+  if (eventName === 'request-ipo-data') {
+    const v = currentView
+    if (v) sendPageEvent('ipo-data', { pageType: v.pageType, ipos: v.ipos })
+  }
+}
+
+// Wire the bridge once. Called from <App> on mount.
+let bridgeReady = false
+export function initSquadStackBridge() {
+  if (bridgeReady || typeof window === 'undefined') return
+  bridgeReady = true
+  // onCallStarted is invoked from the config callback in index.html.
+  window.__ssOnCallStarted = handleCallStarted
+  document.addEventListener('squadstack:agent-event', handleAgentEvent)
+  document.addEventListener('conversationalagent:agent-event', handleAgentEvent)
+  if (DEBUG) console.log('[SquadStack] bridge ready (onCallStarted + agent-event listeners)')
 }

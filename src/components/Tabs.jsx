@@ -1,10 +1,10 @@
 import { NavLink } from 'react-router-dom'
 
 const TABS = [
-  { label: 'Current IPOs', to: '/ipo/current-ipo' },
-  { label: 'Upcoming IPOs', to: '/ipo/upcoming-ipo' },
-  { label: 'Closed IPOs', to: '/ipo/closed-ipo' },
-  { label: 'IPO Performance', to: '/ipo/ipo-performance' },
+  { label: 'Current IPOs', to: '/ipo/current-ipo', key: 'current' },
+  { label: 'Upcoming IPOs', to: '/ipo/upcoming-ipo', key: 'upcoming' },
+  { label: 'Closed IPOs', to: '/ipo/closed-ipo', key: 'closed' },
+  { label: 'IPO Performance', to: '/ipo/ipo-performance', key: 'performance' },
 ]
 
 export default function Tabs() {
@@ -15,6 +15,7 @@ export default function Tabs() {
           <NavLink
             key={t.to}
             to={t.to}
+            data-tab={t.key}
             className={({ isActive }) =>
               `relative whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${
                 isActive
