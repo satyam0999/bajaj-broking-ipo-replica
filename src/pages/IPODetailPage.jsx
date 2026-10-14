@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchIPODetails } from '../api'
-import { fmtDate, money } from '../format'
+import { fmtDate, money, slugify } from '../format'
+import { useIPO } from '../IPOContext'
 import { LoadingState, ErrorState } from '../components/States'
 
 function Stat({ label, value }) {
@@ -29,15 +30,45 @@ function cr(v) {
 }
 
 export default function IPODetailPage() {
-  const { id } = useParams()
+  const { slug } = useParams()
+  const { buckets, status: listStatus } = useIPO()
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
 
+  // Resolve the Bajaj-style slug (e.g. "hd-fire-protect-limited-ipo") back to the
+  // numeric ipoId by matching against every bucket in the (freshly fetched) list.
+  const resolvedId = useMemo(() => {
+    if (!buckets) return null
+    const all = [
+      ...(buckets.current || []),
+      ...(buckets.upcoming || []),
+      ...(buckets.closed || []),
+      ...(buckets.listed || []),
+      ...(buckets.performance || []),
+    ]
+    const match = all.find((it) => slugify(it) === slug)
+    return match?.id ?? null
+  }, [buckets, slug])
+
   useEffect(() => {
     let alive = true
+    if (listStatus === 'loading') {
+      setStatus('loading')
+      return
+    }
+    if (listStatus === 'error') {
+      setError('Could not load IPO list')
+      setStatus('error')
+      return
+    }
+    if (resolvedId == null) {
+      setError('IPO not found for this URL')
+      setStatus('error')
+      return
+    }
     setStatus('loading')
-    fetchIPODetails(id)
+    fetchIPODetails(resolvedId)
       .then((d) => {
         if (!alive) return
         setData(d)
@@ -53,7 +84,7 @@ export default function IPODetailPage() {
     return () => {
       alive = false
     }
-  }, [id])
+  }, [resolvedId, listStatus])
 
   return (
     <div className="min-h-screen bg-slate-50">

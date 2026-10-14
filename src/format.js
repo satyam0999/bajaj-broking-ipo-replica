@@ -22,6 +22,17 @@ export function getLogo(item) {
   return item.companyIcon && item.companyIcon.trim() ? item.companyIcon : null
 }
 
+// Bajaj-style detail slug from the company name:
+// "HD Fire Protect Limited" -> "hd-fire-protect-limited-ipo"
+export function slugify(item) {
+  const base = getName(item)
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return base ? `${base}-ipo` : 'ipo'
+}
+
 export function initials(name) {
   const words = String(name)
     .replace(/limited|ltd\.?|private|pvt\.?/gi, '')

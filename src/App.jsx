@@ -62,30 +62,38 @@ export default function App() {
   return (
     <IPOProvider>
       <Routes>
-        {/* Standalone detail route — opened in a new browser tab, no site chrome */}
-        <Route path="/ipo/detail/:id" element={<IPODetailPage />} />
+        {/* Reserved list tabs — rendered inside the full site layout. These are
+            static paths, so React Router ranks them ABOVE the /ipo/:slug detail
+            route below (so "current-ipo" never matches as a detail slug). */}
+        {Object.values(PAGES).map((p) => (
+          <Route
+            key={p.path}
+            path={p.path}
+            element={
+              <SiteLayout>
+                <IPOPage {...p.props} />
+              </SiteLayout>
+            }
+          />
+        ))}
 
-        {/* Main site layout */}
-        <Route path="*" element={<SiteLayout />} />
+        {/* Any other /ipo/<slug> is an IPO detail page (Bajaj-style URL),
+            opened in a new browser tab with no site chrome. */}
+        <Route path="/ipo/:slug" element={<IPODetailPage />} />
+
+        <Route path="/" element={<Navigate to="/ipo/current-ipo" replace />} />
+        <Route path="/ipo" element={<Navigate to="/ipo/current-ipo" replace />} />
+        <Route path="*" element={<Navigate to="/ipo/current-ipo" replace />} />
       </Routes>
     </IPOProvider>
   )
 }
 
-function SiteLayout() {
+function SiteLayout({ children }) {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      <div className="flex-1">
-        <Routes>
-          <Route path="/" element={<Navigate to="/ipo/current-ipo" replace />} />
-          <Route path="/ipo" element={<Navigate to="/ipo/current-ipo" replace />} />
-          {Object.values(PAGES).map((p) => (
-            <Route key={p.path} path={p.path} element={<IPOPage {...p.props} />} />
-          ))}
-          <Route path="*" element={<Navigate to="/ipo/current-ipo" replace />} />
-        </Routes>
-      </div>
+      <div className="flex-1">{children}</div>
       <Footer />
     </div>
   )

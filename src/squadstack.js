@@ -17,6 +17,7 @@ import {
   biddingPeriod,
   priceRange,
   ipoSize,
+  slugify,
 } from './format'
 
 const DEBUG = true // logs each event to the console (guide's recommended verification aid)
@@ -38,16 +39,6 @@ function sendPageEvent(name, payload) {
 // "SME" | "Mainboard" (short form the bot prompt expects)
 function typeShort(item) {
   return getType(item) === 'sme' ? 'SME' : 'Mainboard'
-}
-
-// "fusion-klassroom-edutech-limited-ipo"
-function slugify(item) {
-  const base = getName(item)
-    .toLowerCase()
-    .replace(/&/g, 'and')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return base ? `${base}-ipo` : 'ipo'
 }
 
 // A human-readable status per bucket, refined with bid dates where we can.

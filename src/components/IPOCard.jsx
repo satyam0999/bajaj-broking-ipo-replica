@@ -9,6 +9,7 @@ import {
   subscription,
   money,
   listingGain,
+  slugify,
 } from '../format'
 
 function Col({ label, value, valueClass = '' }) {
@@ -100,8 +101,9 @@ function columnsFor(item, tab) {
 
 function openDetails(item) {
   if (item.id == null) return
-  // Open the IPO detail page in a NEW browser tab.
-  window.open(`/ipo/detail/${item.id}`, '_blank', 'noopener,noreferrer')
+  // Open the IPO detail page in a NEW browser tab, Bajaj-style slug URL
+  // e.g. /ipo/hd-fire-protect-limited-ipo
+  window.open(`/ipo/${slugify(item)}`, '_blank', 'noopener,noreferrer')
 }
 
 export default function IPOCard({ item, tab }) {
