@@ -61,10 +61,13 @@ function statusFor(item, bucket) {
   }
 }
 
-// Map one API record -> the event IPO shape from the guide:
-// { name, bidding, priceRange, size, status, type, slug }
+// Map one API record -> the IPO shape sent to the bot.
+// IMPORTANT: we include `id` (the real Bajaj ipoId) so the bot can call its
+// fetch_bajaj_ipo_details({ ipo_id }) tool with a REAL id instead of
+// hallucinating one. Without this the LLM guesses an id and gets not_found.
 export function mapIpo(item, bucket) {
   return {
+    id: item.id ?? null,
     name: getName(item),
     bidding: biddingPeriod(item),
     priceRange: priceRange(item),
