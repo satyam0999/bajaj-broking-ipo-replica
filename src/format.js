@@ -33,6 +33,20 @@ export function slugify(item) {
   return base ? `${base}-ipo` : 'ipo'
 }
 
+// Normalized key for matching a slug to an IPO regardless of company-suffix
+// spelling. The list API says "...LIMITED" while the detail API (and Bajaj's
+// own URLs) say "...Ltd", so we drop those words before comparing.
+const SLUG_STOPWORDS = new Set(['limited', 'ltd', 'private', 'pvt', 'ipo', 'the', 'and'])
+export function slugMatchKey(nameOrSlug) {
+  return String(nameOrSlug)
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter((w) => w && !SLUG_STOPWORDS.has(w))
+    .join('-')
+}
+
 export function initials(name) {
   const words = String(name)
     .replace(/limited|ltd\.?|private|pvt\.?/gi, '')

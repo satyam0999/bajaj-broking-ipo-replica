@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchIPODetails } from '../api'
-import { fmtDate, money, slugify } from '../format'
+import { fmtDate, money, slugify, slugMatchKey } from '../format'
 import { useIPO } from '../IPOContext'
 import { LoadingState, ErrorState } from '../components/States'
 
@@ -59,7 +59,12 @@ export default function IPODetailPage() {
       ...(buckets.listed || []),
       ...(buckets.performance || []),
     ]
-    const match = all.find((it) => slugify(it) === slug)
+    // Tolerant match: exact slug first, then a normalized key that ignores
+    // Limited/Ltd/Pvt differences between the list API and the URL.
+    const key = slugMatchKey(slug)
+    const match =
+      all.find((it) => slugify(it) === slug) ||
+      all.find((it) => slugMatchKey(it.name || it.companyName) === key)
     return match?.id ?? null
   }, [cachedId, buckets, slug])
 
