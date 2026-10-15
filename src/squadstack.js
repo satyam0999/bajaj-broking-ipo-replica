@@ -30,9 +30,17 @@ const DEBUG = true // logs each event to the console (guide's recommended verifi
 function sendPageEvent(name, payload) {
   try {
     window.SquadStack?.sendPageEvent?.(name, payload)
-    if (DEBUG) console.log('[SquadStack event] sent →', name, payload)
+    // Console view of EXACTLY what we push onto the WebRTC data channel.
+    if (DEBUG) {
+      console.log(
+        '%c[WebRTC → bot] sendPageEvent',
+        'color:#0b5fff;font-weight:bold',
+        name,
+        JSON.parse(JSON.stringify(payload ?? {}))
+      )
+    }
   } catch (e) {
-    if (DEBUG) console.log('[SquadStack event] not delivered (start a call first) →', name, '·', e?.message)
+    if (DEBUG) console.log('[WebRTC → bot] NOT delivered (start a call first) →', name, '·', e?.message)
   }
 }
 
@@ -89,9 +97,10 @@ let lastView = null // dedupes StrictMode double-mounts / re-renders of the same
 // page/tab render so we can hand it to the bot the instant a call connects.
 let currentView = null
 
-export function notifyIPOView({ pageType, bucket, filter, items }) {
-  const ipos = (items || []).map((it) => mapIpo(it, bucket))
-  currentView = { pageType, filter, ipos }
+export function notifyIPOView({ pageType /*, bucket, filter, items */ }) {
+  // We intentionally send ONLY the tab name — no IPO list. The bot fetches the
+  // actual IPO data itself (via its own tools) using the tab we tell it about.
+  currentView = { pageType }
 
   if (lastView === pageType) return // same tab already reported this view
   lastView = pageType
@@ -100,10 +109,10 @@ export function notifyIPOView({ pageType, bucket, filter, items }) {
     firstLoadDone = true
     // Event 1 — Page load (delivered to the bot only if a call is already live;
     // otherwise harmlessly dropped — onCallStarted re-sends it on connect).
-    sendPageEvent('ipo-page-loaded', { pageType, filter, ipos })
+    sendPageEvent('ipo-page-loaded', { pageType })
   } else {
     // Event 3 — Tab switch
-    sendPageEvent('ipo-tab-switched', { tab: pageType, ipos })
+    sendPageEvent('ipo-tab-switched', { tab: pageType })
   }
 }
 
@@ -113,9 +122,9 @@ export function notifyIPOView({ pageType, bucket, filter, items }) {
 // delivered. We resend the current screen as "ipo-page-loaded" so the bot opens
 // the conversation already knowing which IPOs are on screen.
 function handleCallStarted(conversationId) {
-  if (DEBUG) console.log('[SquadStack] call connected →', conversationId, '· sending current screen')
+  if (DEBUG) console.log('[SquadStack] call connected →', conversationId, '· sending current tab')
   const v = currentView
-  if (v) sendPageEvent('ipo-page-loaded', { pageType: v.pageType, filter: v.filter, ipos: v.ipos })
+  if (v) sendPageEvent('ipo-page-loaded', { pageType: v.pageType })
 }
 
 // --- Bot -> page control -------------------------------------------------
@@ -141,7 +150,7 @@ function handleAgentEvent(e) {
   }
   if (eventName === 'request-ipo-data') {
     const v = currentView
-    if (v) sendPageEvent('ipo-data', { pageType: v.pageType, ipos: v.ipos })
+    if (v) sendPageEvent('ipo-data', { pageType: v.pageType })
   }
 }
 
