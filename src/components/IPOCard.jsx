@@ -101,9 +101,17 @@ function columnsFor(item, tab) {
 
 function openDetails(item) {
   if (item.id == null) return
+  const slug = slugify(item)
+  // Stash the real ipoId keyed by slug so the detail tab can call the
+  // IpoDetails API with the actual id (no slug->id re-resolution needed).
+  try {
+    localStorage.setItem(`ipoId:${slug}`, String(item.id))
+  } catch {
+    /* storage unavailable — detail page falls back to resolving from the list */
+  }
   // Open the IPO detail page in a NEW browser tab, Bajaj-style slug URL
   // e.g. /ipo/hd-fire-protect-limited-ipo
-  window.open(`/ipo/${slugify(item)}`, '_blank', 'noopener,noreferrer')
+  window.open(`/ipo/${slug}`, '_blank', 'noopener,noreferrer')
 }
 
 export default function IPOCard({ item, tab }) {

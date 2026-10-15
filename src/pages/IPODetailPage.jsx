@@ -36,9 +36,21 @@ export default function IPODetailPage() {
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
 
-  // Resolve the Bajaj-style slug (e.g. "hd-fire-protect-limited-ipo") back to the
-  // numeric ipoId by matching against every bucket in the (freshly fetched) list.
+  // Prefer the real ipoId stashed by the card click (keyed by slug) — then the
+  // API call uses the actual id with no list dependency at all.
+  const cachedId = useMemo(() => {
+    try {
+      const v = localStorage.getItem(`ipoId:${slug}`)
+      return v ? Number(v) : null
+    } catch {
+      return null
+    }
+  }, [slug])
+
+  // Fallback (e.g. someone opens the URL directly, no cache): resolve the slug
+  // back to an ipoId by matching against the freshly fetched list.
   const resolvedId = useMemo(() => {
+    if (cachedId != null) return cachedId
     if (!buckets) return null
     const all = [
       ...(buckets.current || []),
@@ -49,15 +61,16 @@ export default function IPODetailPage() {
     ]
     const match = all.find((it) => slugify(it) === slug)
     return match?.id ?? null
-  }, [buckets, slug])
+  }, [cachedId, buckets, slug])
 
   useEffect(() => {
     let alive = true
-    if (listStatus === 'loading') {
+    // Only wait on the list when we have no cached id to fall back on.
+    if (cachedId == null && listStatus === 'loading') {
       setStatus('loading')
       return
     }
-    if (listStatus === 'error') {
+    if (cachedId == null && listStatus === 'error') {
       setError('Could not load IPO list')
       setStatus('error')
       return
@@ -84,7 +97,7 @@ export default function IPODetailPage() {
     return () => {
       alive = false
     }
-  }, [resolvedId, listStatus])
+  }, [resolvedId, listStatus, cachedId])
 
   return (
     <div className="min-h-screen bg-slate-50">
